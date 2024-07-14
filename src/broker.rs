@@ -56,3 +56,59 @@ impl Handler<Subscribe> for Broker {
             .push(msg.subscriber);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::message::Message;
+    use tokio::sync::mpsc;
+
+    struct MockSubscriber {
+        tx: mpsc::Sender<Message>,
+    }
+
+    impl Actor for MockSubscriber {
+        type Context = Context<Self>;
+    }
+
+    impl Handler<Message> for MockSubscriber {
+        type Result = ();
+
+        fn handle(&mut self, msg: Message, _: &mut Self::Context) {
+            let _ = self.tx.try_send(msg);
+        }
+    }
+
+    #[actix::test]
+    async fn test_broker_subscription_and_publish() {
+        let broker = Broker::new().start();
+
+        let (tx, mut rx) = mpsc::channel(1);
+        let mock_subscriber = MockSubscriber { tx }.start();
+
+        broker
+            .send(Subscribe {
+                queue_name: "test_queue".to_string(),
+                subscriber: mock_subscriber.recipient(),
+            })
+            .await
+            .unwrap();
+
+        let test_message = Message {
+            message_id: "1".to_string(),
+            data: "Avada Kedavra".to_string(),
+            publish_time: "2021-07-01T00:00:00Z".to_string(),
+        };
+
+        broker
+            .send(Publish {
+                message: test_message.clone(),
+                queue_name: "test_queue".to_string(),
+            })
+            .await
+            .unwrap();
+
+        let received_message = rx.recv().await.expect("Expected a message to be received");
+        assert_eq!(received_message.data, "Avada Kedavra")
+    }
+}
