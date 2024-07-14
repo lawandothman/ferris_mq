@@ -14,6 +14,12 @@ impl Broker {
     }
 }
 
+impl Default for Broker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Actor for Broker {
     type Context = Context<Self>;
 }
@@ -33,7 +39,7 @@ impl Handler<Publish> for Broker {
     fn handle(&mut self, msg: Publish, _: &mut Self::Context) {
         if let Some(subscribers) = self.subscribers.get_mut(&msg.queue_name) {
             for subscriber in subscribers.iter_mut() {
-                let _ = subscriber.do_send(msg.message.clone());
+                subscriber.do_send(msg.message.clone());
             }
         }
     }
@@ -52,7 +58,7 @@ impl Handler<Subscribe> for Broker {
     fn handle(&mut self, msg: Subscribe, _: &mut Self::Context) {
         self.subscribers
             .entry(msg.queue_name)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(msg.subscriber);
     }
 }
