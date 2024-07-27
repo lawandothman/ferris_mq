@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use anyhow::{anyhow, Result};
 use chrono::Utc;
+use log::error;
 use uuid::Uuid;
 
 use crate::{
@@ -30,7 +31,10 @@ impl Publisher {
             message,
         };
 
-        self.broker.send(publish).await.map_err(|e| anyhow!(e))?;
+        self.broker.send(publish).await.map_err(|e| {
+            error!("Failed to send message to broker: {}", e);
+            anyhow!(e)
+        })?;
         Ok(())
     }
 }

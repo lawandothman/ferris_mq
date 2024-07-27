@@ -1,12 +1,14 @@
 use actix::prelude::*;
 use anyhow::Result;
+use env_logger::Env;
 use ferris_mq::{Broker, Publisher, Subscriber};
+use log::info;
 
 #[actix::main]
 async fn main() -> Result<()> {
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    println!("🚀 Starting the ferris_mq server");
+    info!("🚀 Starting the ferris_mq server");
 
     let broker = Broker::new().start();
 

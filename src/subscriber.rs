@@ -1,5 +1,6 @@
 use actix::prelude::*;
 use anyhow::{anyhow, Result};
+use log::{error, info};
 
 use crate::{broker::Subscribe, Broker, Message};
 
@@ -21,7 +22,10 @@ impl Subscriber {
                 subscriber: addr.recipient(),
             })
             .await
-            .map_err(|e| anyhow!(e))?;
+            .map_err(|e| {
+                error!("Failed to subscribe to queue: {}", e);
+                anyhow!(e)
+            })?;
         Ok(())
     }
 }
@@ -34,6 +38,6 @@ impl Handler<Message> for Subscriber {
     type Result = ();
 
     fn handle(&mut self, msg: Message, _: &mut Self::Context) {
-        println!("Received message: {:?}", msg);
+        info!("Received message: {:?}", msg);
     }
 }
